@@ -1,11 +1,18 @@
 [
-    {
-      "name": "listVacationRequests",
-      "description": "Lists the user's submitted vacation requests from SharePoint.",
-      "parameters": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      }
+  {
+    "name": "listVacationRequests",
+    "description": "Lists the user's submitted vacation requests from SharePoint.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+                "userEmail": {
+                    "type": "string",
+                    "description": "Email address to filter on"
+                }
+            },
+        "required": [
+                "userEmail"
+            ]
     }
-  ]
+  }
+]

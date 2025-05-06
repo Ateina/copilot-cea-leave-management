@@ -5,7 +5,7 @@ import fs from 'fs';
 import { Client } from "@microsoft/microsoft-graph-client";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-
+import { setUserData, getUserData } from "./actions";
 
 // Create AI components
 const model = new OpenAIModel({
@@ -25,9 +25,6 @@ const planner = new ActionPlanner({
   prompts,
   defaultPrompt: async () => {
     const template = await prompts.getPrompt("chat");
-    console.log("[DEBUG] Loaded prompt:", template.name);
-    console.log("[DEBUG] Actions injected:", template.actions);
-    console.log("[DEBUG] Actions injected:", template.prompt);
     template.actions = require('../prompts/chat/actions.json');
     //template.config = require('../prompts/chat/config.json');
     //template.prompt = require('../prompts/chat/skprompt.txt');
@@ -61,12 +58,12 @@ const app = new Application({
 });
 
 interface ConversationState extends DefaultConversationState  {
-  count: number;
+  userData: any;
 }
-type ApplicationTurnState = TurnState<ConversationState>;
+export type ApplicationTurnState = TurnState<ConversationState>;
 app.authentication.get('graph').onUserSignInSuccess(async (context: TurnContext, state: ApplicationTurnState) => {
   const token = state.temp.authTokens['graph'];
-  await context.sendActivity(`Hello ${await getUserDisplayName(token)}. You have successfully logged in to Leave Management!`);
+  await context.sendActivity(`Hello ${await getUserDisplayName(state, token)}. You have successfully logged in to Leave Management!`);
 });
 app.authentication
     .get('graph')
@@ -84,31 +81,32 @@ app.message('/reset', async (context: TurnContext, state: ApplicationTurnState) 
 app.message('/signout', async (context: TurnContext, state: ApplicationTurnState) => {
   await app.authentication.signOutUser(context, state);
 
-  
   // Echo back users request
   await context.sendActivity(`You have signed out`);
 });
 
-interface Requests {
-  
+export interface VacationRequestFilter {
+  /** If supplied, return only requests created by this e‑mail.  */
+  userEmail?: string;
 }
 
 app.ai.action(
   "listVacationRequests", 
-  async (context, state, parameters: Requests): Promise<string> => {
+  async (context, state:ApplicationTurnState, parameters: VacationRequestFilter): Promise<string> => {
     console.log("[DEBUG] listVacationRequests triggered");
     await listVacationRequests(context, state, parameters);
     return "Done!";
   }
 );
 
-async function getUserDisplayName(token: string): Promise<string | undefined> {
+async function getUserDisplayName(state, token: string): Promise<string | undefined> {
   let displayName: string | undefined;
 
   const client = await getGraphClientFromToken(token);
 
   try {
     const user = await client.api('/me').get();
+    setUserData(state, user)
     displayName = user.displayName;
   } catch (error) {
     console.log(`Error calling Graph SDK in getUserDisplayName: ${error}`);
@@ -117,7 +115,7 @@ async function getUserDisplayName(token: string): Promise<string | undefined> {
   return displayName;
 }
 
-async function fetchVacationListItems(graphClient: Client): Promise<any[] | undefined> {
+async function fetchVacationListItems(graphClient: Client, userEmail: string): Promise<any[] | undefined> {
   let listItems: any | undefined;
   //const siteId = config.siteId;
   const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
@@ -133,7 +131,7 @@ async function fetchVacationListItems(graphClient: Client): Promise<any[] | unde
   return listItems.value;
 }
 
-async function listVacationRequests(context: TurnContext, state: TurnState, parameters: Requests): Promise<void> {
+async function listVacationRequests(context: TurnContext, state: ApplicationTurnState, { userEmail }: VacationRequestFilter  ): Promise<void> {
   const ssoToken = state.temp.authTokens?.graph;
   if (!ssoToken) {
     await context.sendActivity("Please sign in to view your vacation requests.");
@@ -142,7 +140,8 @@ async function listVacationRequests(context: TurnContext, state: TurnState, para
 
   try {
     const client = await getGraphClientFromToken(ssoToken);
-    const listItems = await fetchVacationListItems(client);
+const userData = getUserData(state);
+    const listItems = await fetchVacationListItems(client, userData.mail);
     console.log(listItems);
 
     if (!listItems.length) {
