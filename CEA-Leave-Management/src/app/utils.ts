@@ -31,9 +31,12 @@ export async function fetchVacationListItems(graphClient: Client, userEmail: str
   const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
   const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
   try {
+
     listItems = await graphClient
-      .api(`/sites/${siteId}/lists/${listId}/items?expand=fields`)
-      .get();
+        .api(`/sites/${siteId}/lists/${listId}/items`)
+        .expand("fields")
+        .filter(`fields/UserEmail eq '${userEmail}'`)
+        .get();
   } catch (error) {
     console.log(`Error calling Graph SDK in fetchVacationListItems: ${error}`);
   }
