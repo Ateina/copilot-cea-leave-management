@@ -44,7 +44,7 @@ export async function fetchVacationListItems(graphClient: Client, userEmail: str
   return listItems.value;
 }
 
-export async function listVacationRequests(context: TurnContext, state: ApplicationTurnState, { userEmail }: VacationRequestFilter  ): Promise<void> {
+export async function listCurrentUserVacationRequests(context: TurnContext, state: ApplicationTurnState, { userEmail }: VacationRequestFilter  ): Promise<void> {
     const ssoToken = state.temp.authTokens?.graph;
     if (!ssoToken) {
       await context.sendActivity("Please sign in to view your vacation requests.");

@@ -1,6 +1,6 @@
 [
   {
-    "name": "listVacationRequests",
+    "name": "listCurrentUserVacationRequests",
     "description": "Lists the user's submitted vacation requests from SharePoint.",
     "parameters": {
       "type": "object",

@@ -3,7 +3,7 @@ import * as path from "path";
 import config from "../config";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-import { getUserDisplayName, listVacationRequests } from "./utils";
+import { getUserDisplayName, listCurrentUserVacationRequests } from "./utils";
 import { VacationRequestFilter } from "./models";
 
 const model = new OpenAIModel({
@@ -78,10 +78,10 @@ app.message('/signout', async (context: TurnContext, state: ApplicationTurnState
 });
 
 app.ai.action(
-  "listVacationRequests",
+  "listCurrentUserVacationRequests",
   async (context, state:ApplicationTurnState, parameters: VacationRequestFilter) => {
-    console.log("[DEBUG] listVacationRequests triggered");
-    await listVacationRequests(context, state, parameters);
+    console.log("[DEBUG] listCurrentUserVacationRequests triggered");
+    await listCurrentUserVacationRequests(context, state, parameters);
     return "Ask if user wants to create a new vacation request";
   }
 );
