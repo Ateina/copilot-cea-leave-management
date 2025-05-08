@@ -1,8 +1,11 @@
 import { Client } from "@microsoft/microsoft-graph-client";
 import { setUserData, getUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
-import { VacationRequestFilter } from "./models";
+import { LeaveRequestFilter } from "./models";
 import { TurnContext } from "botbuilder";
+
+const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
+const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
 
 export async function getGraphClientFromToken(ssoToken: string): Promise<Client> {
   const graphClient = Client.init({
@@ -26,16 +29,14 @@ export async function getUserDisplayName(state, token: string): Promise<string |
     return displayName;
 }
 
-export async function fetchVacationListItems(graphClient: Client, userEmail: string): Promise<any[] | undefined> {
+export async function fetchVacationListItems(graphClient: Client, filter: string): Promise<any[] | undefined> {
   let listItems: any | undefined;
-  const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
-  const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
   try {
 
     listItems = await graphClient
         .api(`/sites/${siteId}/lists/${listId}/items`)
         .expand("fields")
-        .filter(`fields/UserEmail eq '${userEmail}'`)
+        .filter(filter)
         .get();
   } catch (error) {
     console.log(`Error calling Graph SDK in fetchVacationListItems: ${error}`);
@@ -44,21 +45,21 @@ export async function fetchVacationListItems(graphClient: Client, userEmail: str
   return listItems.value;
 }
 
-export async function listCurrentUserVacationRequests(context: TurnContext, state: ApplicationTurnState, { userEmail }: VacationRequestFilter  ): Promise<void> {
+export async function listCurrentUserAllRequests(context: TurnContext, state: ApplicationTurnState, params: LeaveRequestFilter  ): Promise<void> {
     const ssoToken = state.temp.authTokens?.graph;
     if (!ssoToken) {
       await context.sendActivity("Please sign in to view your vacation requests.");
     }
   
     try {
+      const filter = getFilterString(params);
       const client = await getGraphClientFromToken(ssoToken);
       const userData = getUserData(state);
-      const listItems = await fetchVacationListItems(client, userData.mail);
+      const listItems = await fetchVacationListItems(client, filter);
       if (!listItems.length) {
         await context.sendActivity("No requests were found.");
       } else {
         const summary = listItems.map(i => `• ${i.fields.ApprovalStatus} (${i.fields.LeaveType}) (${i.fields.StartDate}) - (${i.fields.EndDate})`).join("\n");
-        
         await context.sendActivity(`Here are your vacation requests:\n\n${summary}`);
       }
     } catch (err) {
@@ -66,3 +67,19 @@ export async function listCurrentUserVacationRequests(context: TurnContext, stat
       await context.sendActivity("An error occurred while retrieving vacation data.");
     }
   }
+
+function getFilterString(filter: LeaveRequestFilter): string {
+    const filters = [];
+
+    if (filter.userEmail) {
+        filters.push(`fields/UserEmail eq '${filter.userEmail}'`);
+    }
+    if (filter.status) {
+        filters.push(`fields/ApprovalStatus eq '${filter.status}'`);
+    }
+    if (filter.type) {
+        filters.push(`fields/LeaveType eq '${filter.type}'`);
+    }
+
+    return filters.join(" and ");
+}

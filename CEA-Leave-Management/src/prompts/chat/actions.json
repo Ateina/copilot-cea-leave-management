@@ -1,18 +1,78 @@
 [
   {
-    "name": "listCurrentUserVacationRequests",
-    "description": "Lists the user's submitted vacation requests from SharePoint.",
+    "name": "listCurrentUserAllRequests",
+    "description": "Lists all requests submitted by the current user from SharePoint.",
     "parameters": {
       "type": "object",
       "properties": {
-                "userEmail": {
-                    "type": "string",
-                    "description": "Email address to filter on"
-                }
-            },
-        "required": [
-                "userEmail"
-            ]
+        "userEmail": {
+          "type": "string",
+          "description": "Email address to filter on"
+        }
+      },
+      "required": [
+        "userEmail"
+      ]
+    }
+  },
+  {
+    "name": "listCurrentUserVacationRequests",
+    "description": "Lists all vacation requests submitted by the current user.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userEmail": {
+          "type": "string",
+          "description": "Email address to filter on"
+        },
+        "type": {
+          "type": "string",
+          "description": "Request type to filter on"
+        }
+      },
+      "required": [
+        "userEmail", "type"
+      ]
+    }
+  },
+  {
+    "name": "listCurrentUserSickDayRequests",
+    "description": "Lists all sick day requests submitted by the current user.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userEmail": {
+          "type": "string",
+          "description": "Email address to filter on"
+        },
+        "type": {
+          "type": "string",
+          "description": "Request type to filter on"
+        }
+      },
+      "required": [
+        "userEmail", "type"
+      ]
+    }
+  },
+  {
+    "name": "listCurrentUserPendingRequests",
+    "description": "Lists all pending requests submitted by the current user.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userEmail": {
+          "type": "string",
+          "description": "Email address to filter on"
+        },
+        "status": {
+          "type": "string",
+          "description": "Request status to filter on"
+        }
+      },
+      "required": [
+        "userEmail", "status"
+      ]
     }
   }
 ]

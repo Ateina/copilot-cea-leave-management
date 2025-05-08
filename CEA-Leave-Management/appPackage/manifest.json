@@ -35,17 +35,21 @@
             "commandLists": [
                 {
                     "scopes": [
-                        "personal"
+                    "personal"
                     ],
                     "commands": [
-                        {
-                            "title": "How can you help me?",
-                            "description": "How can you help me?"
-                        },
-                        {
-                            "title": "How to develop TeamsToolkit app?",
-                            "description": "How can I develop apps with Teams Toolkit?"
-                        }
+                    {
+                        "title": "Show my sick leave requests",
+                        "description": "Retrieve all of your submitted sick leave requests"
+                    },
+                    {
+                        "title": "Show my vacation requests",
+                        "description": "Retrieve all of your submitted vacation requests"
+                    },
+                    {
+                        "title": "List all my requests",
+                        "description": "Retrieve a combined list of all your leave requests"
+                    }
                     ]
                 }
             ]

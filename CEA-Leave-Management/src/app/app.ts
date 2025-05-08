@@ -3,8 +3,9 @@ import * as path from "path";
 import config from "../config";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-import { getUserDisplayName, listCurrentUserVacationRequests } from "./utils";
-import { VacationRequestFilter } from "./models";
+import { getUserDisplayName, listCurrentUserAllRequests } from "./utils";
+import { LeaveRequestFilter } from "./models";
+import { getUserData } from "./actions";
 
 const model = new OpenAIModel({
   azureApiKey: config.azureOpenAIKey,
@@ -53,6 +54,8 @@ const app = new Application({
 
 interface ConversationState extends DefaultConversationState  {
   userData: any;
+  status?: string;
+  type?: string;
 }
 export type ApplicationTurnState = TurnState<ConversationState>;
 app.authentication.get('graph').onUserSignInSuccess(async (context: TurnContext, state: ApplicationTurnState) => {
@@ -78,11 +81,45 @@ app.message('/signout', async (context: TurnContext, state: ApplicationTurnState
 });
 
 app.ai.action(
-  "listCurrentUserVacationRequests",
-  async (context, state:ApplicationTurnState, parameters: VacationRequestFilter) => {
-    console.log("[DEBUG] listCurrentUserVacationRequests triggered");
-    await listCurrentUserVacationRequests(context, state, parameters);
+  "listCurrentUserAllRequests",
+  async (context, state:ApplicationTurnState, parameters: LeaveRequestFilter) => {
+    console.log("[DEBUG] listCurrentUserAllRequests triggered");
+    parameters.userEmail = getUserData(state).mail;
+    await listCurrentUserAllRequests(context, state, parameters);
     return "Ask if user wants to create a new vacation request";
+  }
+);
+
+app.ai.action(
+  "listCurrentUserVacationRequests",
+  async (context, state:ApplicationTurnState, parameters: LeaveRequestFilter) => {
+    console.log("[DEBUG] listCurrentUserVacationRequests triggered");
+    parameters.userEmail = getUserData(state).mail;
+    parameters.type = "Vacation";
+    await listCurrentUserAllRequests(context, state, parameters);
+    return "Ask if user wants to create a new vacation request";
+  }
+);
+
+app.ai.action(
+  "listCurrentUserSickDayRequests",
+  async (context, state:ApplicationTurnState, parameters: LeaveRequestFilter) => {
+    console.log("[DEBUG] listCurrentUserSickDayRequests triggered");
+    parameters.userEmail = getUserData(state).mail;
+    parameters.type = "Sick Leave";
+    await listCurrentUserAllRequests(context, state, parameters);
+    return "Ask if user wants to create a new sick leave request";
+  }
+);
+
+app.ai.action(
+  "listCurrentUserPendingRequests",
+  async (context, state:ApplicationTurnState, parameters: LeaveRequestFilter) => {
+    console.log("[DEBUG] listCurrentUserPendingRequests triggered");
+    parameters.userEmail = getUserData(state).mail;
+    parameters.status = "Pending";
+    await listCurrentUserAllRequests(context, state, parameters);
+    return "Ask if user wants to send email to HR";
   }
 );
 

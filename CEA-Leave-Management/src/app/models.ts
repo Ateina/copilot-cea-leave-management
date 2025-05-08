@@ -1,5 +1,7 @@
-export interface VacationRequestFilter {
+export interface LeaveRequestFilter {
     userEmail?: string;
+    status?: string;
+  type?: string;
 }
 
 export interface VacationSummary {
