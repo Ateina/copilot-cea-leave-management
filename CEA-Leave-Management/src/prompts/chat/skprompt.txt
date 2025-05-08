@@ -12,6 +12,7 @@ You can perform the following actions:
 - listCurrentUserVacationRequests: Lists all vacation requests submitted by the current user.
 - listCurrentUserSickDayRequests: Lists all sick day requests submitted by the current user.
 - listCurrentUserPendingRequests: Lists all pending requests submitted by the current user.
+- createRequestForCurrentUser: Creates a new vacation or sick-leave request (requires `startDate` and `endDate`).
 
 Vacation Policy:
 - Employees have 25 calendar days of vacation.

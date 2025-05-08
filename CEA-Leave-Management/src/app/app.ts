@@ -3,8 +3,8 @@ import * as path from "path";
 import config from "../config";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-import { getUserDisplayName, listCurrentUserAllRequests } from "./utils";
-import { LeaveRequestFilter } from "./models";
+import { createUserRequest, getUserDisplayName, listCurrentUserAllRequests } from "./utils";
+import { LeaveRequest, LeaveRequestFilter } from "./models";
 import { getUserData } from "./actions";
 
 const model = new OpenAIModel({
@@ -34,7 +34,7 @@ const app = new Application({
   storage,
   authentication: {settings: {
     graph: {
-      scopes: ['User.Read', 'Sites.Read.All'],
+      scopes: ['User.Read', 'Sites.ReadWrite.All'],
       msalConfig: {
         auth: {
           clientId: config.aadAppClientId!,
@@ -120,6 +120,16 @@ app.ai.action(
     parameters.status = "Pending";
     await listCurrentUserAllRequests(context, state, parameters);
     return "Ask if user wants to send email to HR";
+  }
+);
+
+app.ai.action(
+  "createRequestForCurrentUser",
+  async (context, state:ApplicationTurnState, parameters: LeaveRequest) => {
+    console.log("[DEBUG] createRequestForCurrentUser triggered");
+    parameters.userEmail = getUserData(state).mail;
+    await createUserRequest(context, state, parameters);
+    return "Ask if user wants to see list of their requests";
   }
 );
 

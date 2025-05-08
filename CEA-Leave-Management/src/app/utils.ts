@@ -1,7 +1,7 @@
 import { Client } from "@microsoft/microsoft-graph-client";
-import { setUserData, getUserData } from "./actions";
+import { setUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
-import { LeaveRequestFilter } from "./models";
+import { LeaveRequest, LeaveRequestFilter } from "./models";
 import { TurnContext } from "botbuilder";
 
 const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
@@ -45,28 +45,74 @@ export async function fetchVacationListItems(graphClient: Client, filter: string
   return listItems.value;
 }
 
+export async function createRequest(graphClient: Client, params: LeaveRequest): Promise<any | undefined> {
+    let newItem: any | undefined;
+    try {
+  
+        newItem = {
+            fields: {
+                Title:     "Vacation Request",
+                StartDate: params.startDate,
+                EndDate:   params.endDate,
+                //ApprovalStatus: "New",
+                //LeaveType: params.type,
+                UserEmail: params.userEmail
+            }
+        };
+        console.log("Creating new item:", newItem);
+        console.log("params:", params);
+        const created = await graphClient
+            .api(`/sites/${siteId}/lists/${listId}/items`)
+            .post(newItem);
+
+    } catch (error) {
+      console.log(`Error calling Graph SDK in fetchVacationListItems: ${error}`);
+    }
+  
+    return newItem;
+  }
+
 export async function listCurrentUserAllRequests(context: TurnContext, state: ApplicationTurnState, params: LeaveRequestFilter  ): Promise<void> {
     const ssoToken = state.temp.authTokens?.graph;
     if (!ssoToken) {
-      await context.sendActivity("Please sign in to view your vacation requests.");
+    await context.sendActivity("Please sign in to view your vacation requests.");
     }
-  
+
     try {
-      const filter = getFilterString(params);
-      const client = await getGraphClientFromToken(ssoToken);
-      const userData = getUserData(state);
-      const listItems = await fetchVacationListItems(client, filter);
-      if (!listItems.length) {
+    const filter = getFilterString(params);
+    const client = await getGraphClientFromToken(ssoToken);
+    const listItems = await fetchVacationListItems(client, filter);
+    if (!listItems.length) {
         await context.sendActivity("No requests were found.");
-      } else {
+    } else {
         const summary = listItems.map(i => `• ${i.fields.ApprovalStatus} (${i.fields.LeaveType}) (${i.fields.StartDate}) - (${i.fields.EndDate})`).join("\n");
         await context.sendActivity(`Here are your vacation requests:\n\n${summary}`);
-      }
-    } catch (err) {
-      console.error("[ERROR] Failed to fetch vacation requests:", err);
-      await context.sendActivity("An error occurred while retrieving vacation data.");
     }
-  }
+    } catch (err) {
+    console.error("[ERROR] Failed to fetch vacation requests:", err);
+    await context.sendActivity("An error occurred while retrieving vacation data.");
+    }
+}
+
+export async function createUserRequest(context: TurnContext, state: ApplicationTurnState, params: LeaveRequest  ): Promise<void> {
+    const ssoToken = state.temp.authTokens?.graph;
+    if (!ssoToken) {
+        await context.sendActivity("Please sign in to view your vacation requests.");
+    }
+
+    try {
+    const client = await getGraphClientFromToken(ssoToken);
+    const newItem = await createRequest(client, params);
+    if (!newItem) {
+        await context.sendActivity("Item creation failed.");
+    } else {
+        await context.sendActivity(`Item created successfully`);
+    }
+    } catch (err) {
+    console.error("[ERROR] Failed to create a request:", err);
+    await context.sendActivity("An error occurred while creating a request.");
+    }
+}
 
 function getFilterString(filter: LeaveRequestFilter): string {
     const filters = [];

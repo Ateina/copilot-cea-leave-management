@@ -1,7 +1,14 @@
 export interface LeaveRequestFilter {
     userEmail?: string;
     status?: string;
-  type?: string;
+    type?: string;
+}
+
+export interface LeaveRequest {
+    userEmail?: string;
+    startDate?: string;
+    endDate?: string;
+    type?: string;
 }
 
 export interface VacationSummary {
