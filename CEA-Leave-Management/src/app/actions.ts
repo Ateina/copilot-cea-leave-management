@@ -8,12 +8,12 @@ function getUserData(state: ApplicationTurnState): any {
     return state.conversation.userData || null;
 }
 
-function setType(state: ApplicationTurnState, newType: string): any {
-    state.conversation.type = newType;
+function setIsAdmin(state: ApplicationTurnState, value: boolean): any {
+    state.conversation.isAdmin = value;
 }
 
-function getType(state: ApplicationTurnState): any {
-    return state.conversation.type || null;
+function getIsAdmin(state: ApplicationTurnState): any {
+    return state.conversation.isAdmin || null;
 }
 
-export { setUserData, getUserData, setType, getType };
+export { setUserData, getUserData, setIsAdmin, getIsAdmin };

@@ -3,9 +3,9 @@ import * as path from "path";
 import config from "../config";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-import { createUserRequest, getUserDisplayName, listCurrentUserAllRequests, sendReminderToApprover } from "./utils";
+import { createUserRequest, getUserDisplayName, listCurrentUserAllRequests, sendReminderToApprover, isAdmin } from "./utils";
 import { LeaveRequest, LeaveRequestFilter } from "./models";
-import { getUserData } from "./actions";
+import { getUserData, setIsAdmin, getIsAdmin } from "./actions";
 
 const model = new OpenAIModel({
   azureApiKey: config.azureOpenAIKey,
@@ -23,9 +23,19 @@ const planner = new ActionPlanner({
   model,
   prompts,
   defaultPrompt: async () => {
-    const template = await prompts.getPrompt("chat");
-    template.actions = require('../prompts/chat/actions.json');
-    return template;
+    let template;
+    const isAdmin = true;
+    if(isAdmin) {
+      template = await prompts.getPrompt("admin");
+      template.actions = require('../prompts/admin/actions.json');
+      return template;
+    }
+    else {
+      template = await prompts.getPrompt("chat");
+      template.actions = require('../prompts/chat/actions.json');
+      return template;
+    }
+    
   }
 });
 
@@ -34,7 +44,7 @@ const app = new Application({
   storage,
   authentication: {settings: {
     graph: {
-      scopes: ['User.Read', 'Sites.ReadWrite.All', 'Mail.Send'],
+      scopes: ['User.Read', 'Sites.ReadWrite.All', 'Mail.Send', 'Group.Read.All'],
       msalConfig: {
         auth: {
           clientId: config.aadAppClientId!,
@@ -54,12 +64,13 @@ const app = new Application({
 
 interface ConversationState extends DefaultConversationState  {
   userData: any;
-  status?: string;
-  type?: string;
+  isAdmin?: boolean;
 }
 export type ApplicationTurnState = TurnState<ConversationState>;
 app.authentication.get('graph').onUserSignInSuccess(async (context: TurnContext, state: ApplicationTurnState) => {
+  console.log("[DEBUG] onUserSignInSuccess triggered");
   const token = state.temp.authTokens['graph'];
+  
   await context.sendActivity(`Hello ${await getUserDisplayName(state, token)}. You have successfully logged in to Leave Management!`);
 });
 app.authentication
@@ -134,6 +145,12 @@ app.ai.action(
 );
 
 app.ai.action('sendReminderToApprover', async (context: TurnContext, state: ApplicationTurnState, parameters: LeaveRequest) => {
+  await sendReminderToApprover(state, state.temp.authTokens['graph']);
+  return `Email sent to HR. Summarize your action.`;
+});
+
+// ADMIN ACTIONS
+app.ai.action('listRequestsForUser', async (context: TurnContext, state: ApplicationTurnState, parameters: LeaveRequest) => {
   await sendReminderToApprover(state, state.temp.authTokens['graph']);
   return `Email sent to HR. Summarize your action.`;
 });

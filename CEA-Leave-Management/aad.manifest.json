@@ -29,6 +29,10 @@
                     "type": "Scope"
                 },
                 {
+                    "id": "Group.Read.All",
+                    "type": "Scope"
+                },
+                {
                     "id": "Sites.ReadWrite.All",
                     "type": "Scope"
                 }

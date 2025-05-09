@@ -1,9 +1,10 @@
 import { Client } from "@microsoft/microsoft-graph-client";
-import { setUserData } from "./actions";
+import { getUserData, setIsAdmin, setUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
 import { LeaveRequest, LeaveRequestFilter } from "./models";
 import { TurnContext } from "botbuilder";
 import config from '../config';
+import { get } from "http";
 
 const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
 const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
@@ -17,6 +18,24 @@ export async function getGraphClientFromToken(ssoToken: string): Promise<Client>
   return graphClient;
 }
 
+export async function isAdmin(state, token: string): Promise<boolean | undefined> {
+    let isAdmin: boolean | undefined;
+    const groupId = config.ADMIN_GROUP;
+    const userId = getUserData(state).id;
+    console.log("userId", userId)
+    const client = await getGraphClientFromToken(token);
+    try {
+        const group = await client
+            .api(`/users/${userId}/memberOf`)
+            .filter(`id eq '${groupId}'`)
+            .get();
+        isAdmin = group.value.length > 0;
+    } catch (error) {
+        console.log(`Error calling Graph SDK in isAdmin: ${error}`);
+    }
+    return isAdmin;
+}
+
 export async function getUserDisplayName(state, token: string): Promise<string | undefined> {
     let displayName: string | undefined;
     const client = await getGraphClientFromToken(token);
@@ -24,6 +43,8 @@ export async function getUserDisplayName(state, token: string): Promise<string |
         const user = await client.api('/me').get();
         setUserData(state, user)
         displayName = user.displayName;
+        const isUserAdmin = await isAdmin(state, state.temp.authTokens['graph']);
+        setIsAdmin(state, isUserAdmin);
     } catch (error) {
         console.log(`Error calling Graph SDK in getUserDisplayName: ${error}`);
     }
@@ -55,7 +76,7 @@ export async function createRequest(graphClient: Client, params: LeaveRequest): 
                 Title: "Vacation Request",
                 StartDate: params.startDate,
                 EndDate:   params.endDate,
-                ApprovalStatus: "New",
+                ApprovalStatus: "Pending",
                 LeaveType: params.type,
                 UserEmail: params.userEmail
             }
