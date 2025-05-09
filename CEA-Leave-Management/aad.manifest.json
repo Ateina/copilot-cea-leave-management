@@ -25,7 +25,11 @@
                     "type": "Scope"
                 },
                 {
-                    "id": "332a536c-c7ef-4017-ab91-336970924f0d",
+                    "id": "Mail.Send",
+                    "type": "Scope"
+                },
+                {
+                    "id": "Sites.ReadWrite.All",
                     "type": "Scope"
                 }
             ]

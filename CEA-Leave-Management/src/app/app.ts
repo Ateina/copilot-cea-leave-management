@@ -3,7 +3,7 @@ import * as path from "path";
 import config from "../config";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-import { createUserRequest, getUserDisplayName, listCurrentUserAllRequests } from "./utils";
+import { createUserRequest, getUserDisplayName, listCurrentUserAllRequests, sendReminderToApprover } from "./utils";
 import { LeaveRequest, LeaveRequestFilter } from "./models";
 import { getUserData } from "./actions";
 
@@ -34,7 +34,7 @@ const app = new Application({
   storage,
   authentication: {settings: {
     graph: {
-      scopes: ['User.Read', 'Sites.ReadWrite.All'],
+      scopes: ['User.Read', 'Sites.ReadWrite.All', 'Mail.Send'],
       msalConfig: {
         auth: {
           clientId: config.aadAppClientId!,
@@ -132,6 +132,11 @@ app.ai.action(
     return "Ask if user wants to see list of their requests";
   }
 );
+
+app.ai.action('sendReminderToApprover', async (context: TurnContext, state: ApplicationTurnState, parameters: LeaveRequest) => {
+  await sendReminderToApprover(state, state.temp.authTokens['graph']);
+  return `Email sent to HR. Summarize your action.`;
+});
 
 app.feedbackLoop(async (context, state, feedbackLoopData) => {
   //add custom feedback process logic here

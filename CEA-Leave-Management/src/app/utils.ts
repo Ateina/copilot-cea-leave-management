@@ -3,6 +3,7 @@ import { setUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
 import { LeaveRequest, LeaveRequestFilter } from "./models";
 import { TurnContext } from "botbuilder";
+import config from '../config';
 
 const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
 const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
@@ -51,11 +52,11 @@ export async function createRequest(graphClient: Client, params: LeaveRequest): 
   
         newItem = {
             fields: {
-                Title:     "Vacation Request",
+                Title: "Vacation Request",
                 StartDate: params.startDate,
                 EndDate:   params.endDate,
-                //ApprovalStatus: "New",
-                //LeaveType: params.type,
+                ApprovalStatus: "New",
+                LeaveType: params.type,
                 UserEmail: params.userEmail
             }
         };
@@ -75,22 +76,22 @@ export async function createRequest(graphClient: Client, params: LeaveRequest): 
 export async function listCurrentUserAllRequests(context: TurnContext, state: ApplicationTurnState, params: LeaveRequestFilter  ): Promise<void> {
     const ssoToken = state.temp.authTokens?.graph;
     if (!ssoToken) {
-    await context.sendActivity("Please sign in to view your vacation requests.");
+        await context.sendActivity("Please sign in to view your vacation requests.");
     }
 
     try {
-    const filter = getFilterString(params);
-    const client = await getGraphClientFromToken(ssoToken);
-    const listItems = await fetchVacationListItems(client, filter);
-    if (!listItems.length) {
-        await context.sendActivity("No requests were found.");
-    } else {
-        const summary = listItems.map(i => `• ${i.fields.ApprovalStatus} (${i.fields.LeaveType}) (${i.fields.StartDate}) - (${i.fields.EndDate})`).join("\n");
-        await context.sendActivity(`Here are your vacation requests:\n\n${summary}`);
-    }
-    } catch (err) {
-    console.error("[ERROR] Failed to fetch vacation requests:", err);
-    await context.sendActivity("An error occurred while retrieving vacation data.");
+        const filter = getFilterString(params);
+        const client = await getGraphClientFromToken(ssoToken);
+        const listItems = await fetchVacationListItems(client, filter);
+        if (!listItems.length) {
+            await context.sendActivity("No requests were found.");
+        } else {
+            const summary = listItems.map(i => `• ${i.fields.ApprovalStatus} (${i.fields.LeaveType}) (${i.fields.StartDate}) - (${i.fields.EndDate})`).join("\n");
+            await context.sendActivity(`Here are your vacation requests:\n\n${summary}`);
+        }
+        } catch (err) {
+        console.error("[ERROR] Failed to fetch vacation requests:", err);
+        await context.sendActivity("An error occurred while retrieving vacation data.");
     }
 }
 
@@ -101,17 +102,62 @@ export async function createUserRequest(context: TurnContext, state: Application
     }
 
     try {
-    const client = await getGraphClientFromToken(ssoToken);
-    const newItem = await createRequest(client, params);
-    if (!newItem) {
-        await context.sendActivity("Item creation failed.");
-    } else {
-        await context.sendActivity(`Item created successfully`);
-    }
+        const client = await getGraphClientFromToken(ssoToken);
+        const newItem = await createRequest(client, params);
+        if (!newItem) {
+            await context.sendActivity("Item creation failed.");
+        } else {
+            await context.sendActivity(`Item created successfully`);
+        }
     } catch (err) {
-    console.error("[ERROR] Failed to create a request:", err);
-    await context.sendActivity("An error occurred while creating a request.");
+        console.error("[ERROR] Failed to create a request:", err);
+        await context.sendActivity("An error occurred while creating a request.");
     }
+}
+
+export async function sendReminderToApprover(state: ApplicationTurnState, token): Promise<string> {
+    const email = await createEmailContent(token, state);
+    try {
+        const client = Client.init({
+            authProvider: (done) => {
+                done(null, token);
+            }
+        });
+        const sendEmail = await client.api('/me/sendMail').post(JSON.stringify(email));
+        if (sendEmail.ok) {
+            return email.message.body.content;
+        }
+        else {
+            console.log(`Error ${sendEmail.status} calling Graph in sendToHR: ${sendEmail.statusText}`);
+            return 'Error sending email';
+        }
+    } catch (error) {
+        console.error('Error in sendLists:', error);
+        throw error;
+    }
+}
+
+async function createEmailContent(token, state) {
+    const profileName = await getUserDisplayName(state, token);
+    let emailContent = `${profileName} needs your attention with theirs leave requests.\n\n`;
+    const email ={
+        "message": {
+        "subject": "Request to review leave requests",
+        "body": {
+            "contentType": "Text",
+            "content": `Hello HR Team, \nI hope this email finds you well. \n\n${emailContent} \n\n Best Regards, \n Leave Management Bot`,
+        },
+        "toRecipients": [
+            {
+            "emailAddress": {
+                "address": `${config.HR_EMAIL}`
+            }
+            }
+        ]
+        },
+        "saveToSentCandidates": "true"
+    };
+    return await email;
 }
 
 function getFilterString(filter: LeaveRequestFilter): string {

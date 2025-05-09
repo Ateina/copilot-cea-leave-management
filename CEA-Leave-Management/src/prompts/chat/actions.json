@@ -100,5 +100,21 @@
         "type", "startDate", "endDate"
       ]
     }
+  },
+  {
+    "name": "sendReminderToApprover",
+    "description": "Send reminder to Human Resources, aka HR to approve the requests",
+    "parameters": {
+        "type": "object",
+        "properties": {
+          "userEmail": {
+            "type": "string",
+            "description": "Email address who requested the review"
+          }
+        },
+        "required": [
+            "userEmail"
+        ]
+    }
   }
 ]
