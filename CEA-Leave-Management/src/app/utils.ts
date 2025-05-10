@@ -1,10 +1,9 @@
 import { Client } from "@microsoft/microsoft-graph-client";
 import { getUserData, setIsAdmin, setUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
-import { LeaveRequest, LeaveRequestFilter } from "./models";
+import { LeaveRequest, LeaveRequestFilter, LeaveRequestUpdate } from "./models";
 import { TurnContext } from "botbuilder";
 import config from '../config';
-import { get } from "http";
 
 const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
 const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
@@ -94,7 +93,22 @@ export async function createRequest(graphClient: Client, params: LeaveRequest): 
     return newItem;
   }
 
-export async function listCurrentUserAllRequests(context: TurnContext, state: ApplicationTurnState, params: LeaveRequestFilter  ): Promise<void> {
+export async function updateRequest(graphClient: Client, params: LeaveRequestUpdate): Promise<any | undefined> {
+    let updatedItem: any | undefined;
+    try {
+        console.log("params:", params);
+        updatedItem = await graphClient
+            .api(`/sites/${siteId}/lists/${listId}/items/${params.requestId}/fields`)
+            .patch({"ApprovalStatus": params.status});
+
+    } catch (error) {
+        console.log(`Error calling Graph SDK in updateRequest: ${error}`);
+    }
+
+    return updatedItem;
+}
+
+export async function listRequestsByStatusByUserByType(context: TurnContext, state: ApplicationTurnState, params: LeaveRequestFilter  ): Promise<void> {
     const ssoToken = state.temp.authTokens?.graph;
     if (!ssoToken) {
         await context.sendActivity("Please sign in to view your vacation requests.");
@@ -133,6 +147,26 @@ export async function createUserRequest(context: TurnContext, state: Application
     } catch (err) {
         console.error("[ERROR] Failed to create a request:", err);
         await context.sendActivity("An error occurred while creating a request.");
+    }
+}
+
+export async function updateUserRequest(context: TurnContext, state: ApplicationTurnState, params: LeaveRequestUpdate  ): Promise<void> {
+    const ssoToken = state.temp.authTokens?.graph;
+    if (!ssoToken) {
+        await context.sendActivity("Please sign in to view your vacation requests.");
+    }
+
+    try {
+        const client = await getGraphClientFromToken(ssoToken);
+        const updatedItem = await updateRequest(client, params);
+        if (!updatedItem) {
+            await context.sendActivity("Item update failed.");
+        } else {
+            await context.sendActivity(`Item updated successfully`);
+        }
+    } catch (err) {
+        console.error("[ERROR] Failed to update a request:", err);
+        await context.sendActivity("An error occurred while updating a request.");
     }
 }
 

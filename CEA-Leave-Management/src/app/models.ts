@@ -11,6 +11,11 @@ export interface LeaveRequest {
     type?: string;
 }
 
+export interface LeaveRequestUpdate {
+    requestId?: string;
+    status?: string;
+}
+
 export interface VacationSummary {
       status: string;
       type: string;

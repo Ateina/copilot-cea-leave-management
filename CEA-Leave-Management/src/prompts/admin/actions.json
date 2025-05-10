@@ -1,45 +1,45 @@
 [
     {
-      "name": "listRequestsForUser",
-      "description": "Lists all leave requests submitted by a specified user.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "userEmail": {
-            "type": "string",
-            "description": "Email address of the user whose requests should be retrieved"
-          }
-        },
-        "required": ["userEmail"]
-      }
+        "name": "getRequestsByQuery",
+        "description": "Lists leave requests, optionally filtering by user email/status/type.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "userEmail": {
+                    "type": "string",
+                    "description": "Email address of the user whose requests should be retrieved"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["Approved", "Rejected", "Pending"],
+                    "description": "Filter requests by status: 'Approved', 'Rejected', or 'Pending'"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["Vacation", "Sick Leave"],
+                    "description": "Filter requests by type: 'Vacation' or 'Sick Leave'"
+                }
+            },
+            "required": []
+        }
     },
     {
-      "name": "listPendingRequests",
-      "description": "Lists all leave requests that are currently pending approval.",
-      "parameters": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      }
-    },
-    {
-      "name": "approveRejectRequest",
-      "description": "Approves or rejects a specified leave request.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "requestId": {
-            "type": "string",
-            "description": "The unique identifier of the leave request to act on"
-          },
-          "action": {
-            "type": "string",
-            "enum": ["Approve", "Reject"],
-            "description": "Whether to 'Approve' or 'Reject' the request"
-          }
-        },
-        "required": ["requestId", "action"]
-      }
+        "name": "approveRejectRequest",
+        "description": "Approves or rejects a specified leave request.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string",
+                    "description": "The unique identifier of the leave request to act on"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["Approved", "Rejected"],
+                    "description": "Set request status to 'Approved' or 'Rejected'"
+                }
+            },
+            "required": ["requestId", "status"]
+        }
     }
-  ]
-  
+]

@@ -1,77 +1,27 @@
 [
   {
-    "name": "listCurrentUserAllRequests",
+    "name": "getRequestsByQueryForCurrentUser",
     "description": "Lists all requests submitted by the current user from SharePoint.",
     "parameters": {
       "type": "object",
       "properties": {
         "userEmail": {
-          "type": "string",
-          "description": "Email address to filter on"
+            "type": "string",
+            "description": "Email address of current user"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["Approved", "Rejected", "Pending"],
+            "description": "Filter requests by status: 'Approved', 'Rejected', or 'Pending'"
+        },
+        "type": {
+            "type": "string",
+            "enum": ["Vacation", "Sick Leave"],
+            "description": "Filter requests by type: 'Vacation' or 'Sick Leave'"
         }
       },
       "required": [
         "userEmail"
-      ]
-    }
-  },
-  {
-    "name": "listCurrentUserVacationRequests",
-    "description": "Lists all vacation requests submitted by the current user.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "userEmail": {
-          "type": "string",
-          "description": "Email address to filter on"
-        },
-        "type": {
-          "type": "string",
-          "description": "Request type to filter on"
-        }
-      },
-      "required": [
-        "userEmail", "type"
-      ]
-    }
-  },
-  {
-    "name": "listCurrentUserSickDayRequests",
-    "description": "Lists all sick day requests submitted by the current user.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "userEmail": {
-          "type": "string",
-          "description": "Email address to filter on"
-        },
-        "type": {
-          "type": "string",
-          "description": "Request type to filter on"
-        }
-      },
-      "required": [
-        "userEmail", "type"
-      ]
-    }
-  },
-  {
-    "name": "listCurrentUserPendingRequests",
-    "description": "Lists all pending requests submitted by the current user.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "userEmail": {
-          "type": "string",
-          "description": "Email address to filter on"
-        },
-        "status": {
-          "type": "string",
-          "description": "Request status to filter on"
-        }
-      },
-      "required": [
-        "userEmail", "status"
       ]
     }
   },
@@ -83,7 +33,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "Request status, e.g. Sick Leave, Vacation"
+          "description": "Request type, e.g. Sick Leave, Vacation"
         },
         "startDate": {
           "type": "string",
