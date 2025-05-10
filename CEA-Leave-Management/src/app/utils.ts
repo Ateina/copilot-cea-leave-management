@@ -1,8 +1,9 @@
 import { Client } from "@microsoft/microsoft-graph-client";
+import { CardFactory, TurnContext } from "botbuilder";
 import { getUserData, setIsAdmin, setUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
 import { LeaveRequest, LeaveRequestFilter, LeaveRequestUpdate } from "./models";
-import { TurnContext } from "botbuilder";
+import * as listOfRequests from "./cards/listOfRequests.json";
 import config from '../config';
 
 const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
@@ -121,8 +122,20 @@ export async function listRequestsByStatusByUserByType(context: TurnContext, sta
         if (!listItems.length) {
             await context.sendActivity("No requests were found.");
         } else {
-            const summary = listItems.map(i => `• ${i.fields.ApprovalStatus} (${i.fields.LeaveType}) (${i.fields.StartDate}) - (${i.fields.EndDate})`).join("\n");
-            await context.sendActivity(`Here are your vacation requests:\n\n${summary}`);
+            const cardPayload = {
+                ...listOfRequests,
+                body: [
+                  ...listOfRequests.body,
+                  ...listItems.map(item => ({
+                    type: "TextBlock",
+                    text: `${item.fields.ApprovalStatus} • ${item.fields.LeaveType} • ${dateFormat(item.fields.StartDate)} - ${dateFormat(item.fields.EndDate)}`,
+                  }))
+                ]
+              };
+            await context.sendActivity({
+                attachments: [CardFactory.adaptiveCard(cardPayload)]
+              });
+              return;
         }
         } catch (err) {
         console.error("[ERROR] Failed to fetch vacation requests:", err);
@@ -229,4 +242,10 @@ function getFilterString(filter: LeaveRequestFilter): string {
     }
 
     return filters.join(" and ");
+}
+
+function dateFormat(dateString: string): string {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { month: 'long', day: '2-digit' };
+    return date.toLocaleDateString('en-US', options);
 }

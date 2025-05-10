@@ -1,0 +1,30 @@
+{
+    "type": "AdaptiveCard",
+    "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.5",
+    "body": [
+        {
+            "type": "Container",
+            "bleed": true,
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": "List of Requests",
+                    "wrap": true,
+                    "spacing": "Medium",
+                    "size": "Large",
+                    "weight": "Bolder",
+                    "style": "heading",
+                    "color": "Accent"
+                },
+                {
+                    "type": "Image",
+                    "altText": "Vacation Requests",
+                    "url": "https://t4.ftcdn.net/jpg/02/65/26/83/360_F_265268314_LmykO3vrtzmh3TQbBdnxj9vUczqqJXCU.jpg",
+                    "size": "Stretch",
+                    "style": "RoundedCorners"
+                }
+            ]
+        }
+    ]
+}
