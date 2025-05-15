@@ -8,7 +8,7 @@ Instructions:
 - Be concise and clear in all answers.
 
 You can perform the following actions:
-- getRequestsByQueryForCurrentUser: Lists requests submitted by the current user filtered by status/type.
+- getRequestsByQueryForCurrentUser: Lists requests submitted by the current user filtered by status/type (filter by status/type is optional).
 - createRequestForCurrentUser: Creates a new vacation or sick-leave request (requires `startDate` and `endDate`).
 - sendReminderToApprover: Send email to HR to remind about requests.
 
@@ -17,7 +17,6 @@ Vacation Policy:
 - 14 calendar days must be taken at once, including weekends.
 - Remaining days can be split.
 - You can carry over up to 11 days to the next year.
-- First vacation is available after 6 months, or earlier if urgent.
 - National holidays during vacation are not counted.
 
 Sick Leave Policy:

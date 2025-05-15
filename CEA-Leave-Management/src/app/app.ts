@@ -3,7 +3,7 @@ import * as path from "path";
 import config from "../config";
 // See https://aka.ms/teams-ai-library to learn more about the Teams AI library.
 import { Application, ActionPlanner, OpenAIModel, PromptManager, AuthError, TurnState, DefaultConversationState } from "@microsoft/teams-ai";
-import { createUserRequest, getUserDisplayName, listRequestsByStatusByUserByType, sendReminderToApprover, isAdmin, updateUserRequest } from "./utils";
+import { createUserRequest, getUserDisplayName, listRequestsByStatusByUserByType, sendReminderToApprover, isAdmin, updateUserRequest, choosePrompt } from "./utils";
 import { LeaveRequest, LeaveRequestFilter, LeaveRequestUpdate } from "./models";
 import { getUserData, setIsAdmin, getIsAdmin } from "./actions";
 
@@ -22,21 +22,7 @@ const prompts = new PromptManager({
 const planner = new ActionPlanner({
   model,
   prompts,
-  defaultPrompt: async () => {
-    let template;
-    const isAdmin = true;
-    if(isAdmin) {
-      template = await prompts.getPrompt("admin");
-      template.actions = require('../prompts/admin/actions.json');
-      return template;
-    }
-    else {
-      template = await prompts.getPrompt("chat");
-      template.actions = require('../prompts/chat/actions.json');
-      return template;
-    }
-    
-  }
+  defaultPrompt: choosePrompt
 });
 
 const storage = new MemoryStorage();
@@ -70,8 +56,9 @@ export type ApplicationTurnState = TurnState<ConversationState>;
 app.authentication.get('graph').onUserSignInSuccess(async (context: TurnContext, state: ApplicationTurnState) => {
   console.log("[DEBUG] onUserSignInSuccess triggered");
   const token = state.temp.authTokens['graph'];
-  
-  await context.sendActivity(`Hello ${await getUserDisplayName(state, token)}. You have successfully logged in to Leave Management!`);
+  const userName = await getUserDisplayName(state, token);
+  const isUserAdmin = await getIsAdmin(state);
+  await context.sendActivity(`Hello ${userName}. You have successfully logged in! You are ${isUserAdmin ? 'an admin' : 'a user'}.`);
 });
 app.authentication
     .get('graph')
@@ -108,7 +95,7 @@ app.ai.action(
     console.log("[DEBUG] createRequestForCurrentUser triggered");
     parameters.userEmail = getUserData(state).mail;
     await createUserRequest(context, state, parameters);
-    return "Ask if user wants to see list of their requests";
+    return "Remind user to discuss with their manager and wait for approval";
   }
 );
 
@@ -125,7 +112,7 @@ app.ai.action('getRequestsByQuery', async (context: TurnContext, state: Applicat
 
 app.ai.action('approveRejectRequest', async (context: TurnContext, state: ApplicationTurnState, parameters: LeaveRequestUpdate) => {
   await updateUserRequest(context, state, parameters);
-  return `Ask if admin wants to approve or reject another request`;
+  return `Ask if admin wants to see list of pending requests`;
 });
 
 app.feedbackLoop(async (context, state, feedbackLoopData) => {

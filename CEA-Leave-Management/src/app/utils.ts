@@ -1,13 +1,16 @@
 import { Client } from "@microsoft/microsoft-graph-client";
 import { CardFactory, TurnContext } from "botbuilder";
-import { getUserData, setIsAdmin, setUserData } from "./actions";
+import { getIsAdmin, getUserData, setIsAdmin, setUserData } from "./actions";
 import { ApplicationTurnState } from "./app";
 import { LeaveRequest, LeaveRequestFilter, LeaveRequestUpdate } from "./models";
-import * as listOfRequests from "./cards/listOfRequests.json";
 import config from '../config';
+import { getItemCard, getListCard } from "./utils/cardBuilder";
+import { Constants } from "./constants";
+import { PromptManager } from "@microsoft/teams-ai/lib/prompts/PromptManager";
+import * as path from "path";
 
-const siteId = "15c4a3c2-e253-40d6-aab6-e2e28274eb90";
-const listId = "68608cf3-c7cd-4f04-9467-b18dfd952805";
+const siteId = config.SITE_ID;
+const listId = config.LIST_ID;
 
 export async function getGraphClientFromToken(ssoToken: string): Promise<Client> {
   const graphClient = Client.init({
@@ -122,16 +125,11 @@ export async function listRequestsByStatusByUserByType(context: TurnContext, sta
         if (!listItems.length) {
             await context.sendActivity("No requests were found.");
         } else {
-            const cardPayload = {
-                ...listOfRequests,
-                body: [
-                  ...listOfRequests.body,
-                  ...listItems.map(item => ({
-                    type: "TextBlock",
-                    text: `${item.fields.ApprovalStatus} • ${item.fields.LeaveType} • ${dateFormat(item.fields.StartDate)} - ${dateFormat(item.fields.EndDate)}`,
-                  }))
-                ]
-              };
+            const cardPayload = getListCard(
+                "List of Requests",
+                Constants.ListImageUrl,
+                listItems
+            );
             await context.sendActivity({
                 attachments: [CardFactory.adaptiveCard(cardPayload)]
               });
@@ -152,10 +150,20 @@ export async function createUserRequest(context: TurnContext, state: Application
     try {
         const client = await getGraphClientFromToken(ssoToken);
         const newItem = await createRequest(client, params);
+        console.log("newItem", newItem);
         if (!newItem) {
             await context.sendActivity("Item creation failed.");
         } else {
-            await context.sendActivity(`Item created successfully`);
+              const cardPayload = getItemCard(
+                "Item created successfully!",
+                newItem.fields.LeaveType === "Vacation" ? Constants.VacationImageUrl : Constants.SickLeaveImageUrl,
+                newItem
+            );
+            
+              await context.sendActivity({
+                attachments: [CardFactory.adaptiveCard(cardPayload)]
+              });
+              return;
         }
     } catch (err) {
         console.error("[ERROR] Failed to create a request:", err);
@@ -175,7 +183,16 @@ export async function updateUserRequest(context: TurnContext, state: Application
         if (!updatedItem) {
             await context.sendActivity("Item update failed.");
         } else {
-            await context.sendActivity(`Item updated successfully`);
+            const cardPayload = getItemCard(
+                "Item updated successfully!",
+                updatedItem.fields.LeaveType === "Vacation" ? Constants.VacationImageUrl : Constants.SickLeaveImageUrl,
+                updatedItem
+            );
+            
+              await context.sendActivity({
+                attachments: [CardFactory.adaptiveCard(cardPayload)]
+              });
+              return;
         }
     } catch (err) {
         console.error("[ERROR] Failed to update a request:", err);
@@ -204,6 +221,25 @@ export async function sendReminderToApprover(state: ApplicationTurnState, token)
         throw error;
     }
 }
+
+export async function choosePrompt(context, state){
+    let template;
+    const prompts = new PromptManager({
+      promptsFolder: path.join(__dirname, "../prompts"),
+    });
+    const isAdmin = getIsAdmin(state);
+    console.log("IsAdmin", isAdmin);
+    if(isAdmin) {
+      template = await prompts.getPrompt("admin");
+      template.actions = require('../prompts/admin/actions.json');
+      return template;
+    }
+    else {
+      template = await prompts.getPrompt("chat");
+      template.actions = require('../prompts/chat/actions.json');
+      return template;
+    }
+  }
 
 async function createEmailContent(token, state) {
     const profileName = await getUserDisplayName(state, token);
@@ -244,7 +280,7 @@ function getFilterString(filter: LeaveRequestFilter): string {
     return filters.join(" and ");
 }
 
-function dateFormat(dateString: string): string {
+export function dateFormat(dateString: string): string {
     const date = new Date(dateString);
     const options: Intl.DateTimeFormatOptions = { month: 'long', day: '2-digit' };
     return date.toLocaleDateString('en-US', options);

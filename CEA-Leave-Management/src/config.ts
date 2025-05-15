@@ -14,6 +14,8 @@ const config = {
   aadAppOauthAuthority: process.env.AAD_APP_OAUTH_AUTHORITY,
   HR_EMAIL: process.env.HR_EMAIL,
   ADMIN_GROUP: process.env.ADMIN_GROUP,
+  SITE_ID: process.env.SITE_ID,
+  LIST_ID: process.env.LIST_ID,
 };
 
 export default config;
